@@ -1,0 +1,1746 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Inventario - Registro de Materiales</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #2c3e50, #34495e);
+            color: white;
+            padding: 25px 30px;
+            border-bottom: 3px solid #3498db;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            padding: 25px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .search-section {
+            margin-bottom: 25px;
+        }
+
+        .search-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .search-input {
+            padding: 12px 15px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);
+        }
+
+        .quick-filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: #ecf0f1;
+            border: 2px solid #bdc3c7;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #2980b9;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .mode-btn {
+            padding: 12px 25px;
+            background: #ecf0f1;
+            border: 2px solid #bdc3c7;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .mode-btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #2980b9;
+        }
+
+        .form-container {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 13px;
+        }
+
+        .form-input {
+            padding: 10px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .form-input[type="number"] {
+            text-align: center;
+        }
+
+        .photos-section {
+            margin-top: 20px;
+        }
+
+        .file-drop-zone {
+            border: 3px dashed #3498db;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .file-drop-zone:hover, .file-drop-zone.dragover {
+            background: #e3f2fd;
+            border-color: #2980b9;
+        }
+
+        .file-drop-zone input {
+            display: none;
+        }
+
+        .photos-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .photo-preview {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .photo-preview.dragging {
+            transform: scale(0.95);
+            opacity: 0.5;
+        }
+
+        .photo-preview.drag-over {
+            transform: scale(1.05);
+            border-color: #3498db;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+        }
+
+        .photo-preview img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+        }
+
+        .photo-remove {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .timeline {
+            padding: 30px;
+        }
+
+        .date-group {
+            margin-bottom: 40px;
+        }
+
+        .date-header {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .entries-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .entry-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border-left: 4px solid #3498db;
+            transition: all 0.3s ease;
+        }
+
+        .entry-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        }
+
+        .entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .entry-code {
+            background: #3498db;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .entry-warehouse {
+            background: #e74c3c;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .entry-description {
+            font-size: 14px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .entry-quantity {
+            background: #27ae60;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 13px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .entry-photos {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 8px;
+        }
+
+        .entry-photo {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .entry-photo:hover {
+            transform: scale(1.05);
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px;
+            color: #7f8c8d;
+            font-size: 18px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .modal-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 10px;
+        }
+
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        .close:hover {
+            color: #ccc;
+        }
+
+        .stats-bar {
+            background: #ecf0f1;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: #2c3e50;
+            border-top: 1px solid #bdc3c7;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .entry-card {
+            animation: fadeInUp 0.5s ease;
+        }
+
+        .notification {
+            animation: slideInRight 0.3s ease;
+        }
+
+        /* Multiple creation mode */
+        .multiple-mode {
+            display: none;
+        }
+
+        .multiple-mode.active {
+            display: block;
+        }
+
+        .single-mode.active {
+            display: block;
+        }
+
+        .single-mode {
+            display: none;
+        }
+
+        .group-container {
+            position: relative;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .group-photos.drag-active {
+            animation: pulse 1s infinite;
+            border-color: #3498db !important;
+            background: #e3f2fd !important;
+        }
+
+        .available-photos-section {
+            margin-bottom: 20px;
+        }
+
+        .date-selector-bar {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 2px solid #3498db;
+        }
+
+        .date-selector-bar label {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .search-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .entries-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .mode-selector {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📦 Control de Inventario</h1>
+            <p>Sistema de registro de materiales recibidos en almacén</p>
+        </div>
+
+        <div class="controls">
+            <!-- Sección de búsqueda -->
+            <div class="search-section">
+                <div class="search-grid">
+                    <input type="text" id="searchGeneral" class="search-input" placeholder="🔍 Buscar por código o descripción...">
+                    <select id="filterAlmacen" class="search-input">
+                        <option value="">Todos los almacenes</option>
+                        <option value="1">Almacén 1</option>
+                        <option value="2">Almacén 2</option>
+                        <option value="3">Almacén 3</option>
+                        <option value="4">Almacén 4</option>
+                        <option value="5">Almacén 5</option>
+                    </select>
+                    <input type="date" id="filterFecha" class="search-input" placeholder="Fecha específica">
+                </div>
+                
+                <div class="quick-filters">
+                    <button class="filter-btn" data-days="7">Últimos 7 días</button>
+                    <button class="filter-btn" data-days="14">Últimos 14 días</button>
+                    <button class="filter-btn" data-days="30">Últimos 30 días</button>
+                    <button class="filter-btn" id="clearFilters">Limpiar filtros</button>
+                </div>
+            </div>
+
+            <!-- Selector de modo -->
+            <div class="mode-selector">
+                <button class="mode-btn active" id="singleModeBtn">📝 Registro Individual</button>
+                <button class="mode-btn" id="multipleModeBtn">📸 Registro Múltiple</button>
+            </div>
+
+            <!-- Formulario modo individual -->
+            <div class="form-container single-mode active">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="codigo">Código Artículo</label>
+                        <input type="number" id="codigo" class="form-input" placeholder="1234" min="100" max="9999">
+                    </div>
+                    <div class="form-group">
+                        <label for="descripcion">Descripción del Material</label>
+                        <input type="text" id="descripcion" class="form-input" placeholder="Tornillos hexagonales M8x50">
+                    </div>
+                    <div class="form-group">
+                        <label for="almacen">Almacén</label>
+                        <select id="almacen" class="form-input">
+                            <option value="">Seleccionar</option>
+                            <option value="1">Almacén 1</option>
+                            <option value="2">Almacén 2</option>
+                            <option value="3">Almacén 3</option>
+                            <option value="4">Almacén 4</option>
+                            <option value="5">Almacén 5</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cantidad">Cantidad</label>
+                        <input type="number" id="cantidad" class="form-input" placeholder="100" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="fecha">Fecha Recepción</label>
+                        <input type="date" id="fecha" class="form-input">
+                    </div>
+                </div>
+
+                <div class="photos-section">
+                    <div class="file-drop-zone" onclick="document.getElementById('fotos').click()">
+                        <input type="file" id="fotos" accept="image/*" multiple>
+                        <div style="font-size: 24px; margin-bottom: 10px;">📸</div>
+                        <div><strong>Seleccionar fotos del material</strong></div>
+                        <small>Arrastra archivos aquí o haz clic para seleccionar</small>
+                    </div>
+                    <div id="photosPreview" class="photos-preview"></div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="addSingleEntry()">
+                        <span>✅</span> Registrar Material
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearSingleForm()">
+                        <span>🔄</span> Limpiar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Formulario modo múltiple -->
+            <div class="form-container multiple-mode">
+                <p style="text-align: center; margin-bottom: 20px; color: #7f8c8d;">
+                    <strong>Modo múltiple:</strong> Sube varias fotos, agrúpalas y crea múltiples registros de una vez
+                </p>
+                
+                <div class="file-drop-zone" onclick="document.getElementById('fotosMultiple').click()">
+                    <input type="file" id="fotosMultiple" accept="image/*" multiple>
+                    <div style="font-size: 24px; margin-bottom: 10px;">📸</div>
+                    <div><strong>Subir todas las fotos del día</strong></div>
+                    <small>Después podrás organizarlas en grupos por material</small>
+                </div>
+
+                <div id="dateSelector" style="display: none;" class="date-selector-bar">
+                    <label for="commonDate">📅 Fecha para todos los grupos:</label>
+                    <input type="date" id="commonDate" class="form-input" style="max-width: 200px;">
+                    <small style="color: #7f8c8d;">Esta fecha se aplicará a todos los grupos al crear los registros</small>
+                </div>
+
+                <div id="multipleWorkspace" style="margin-top: 20px;">
+                    <!-- Aquí se generará el workspace de agrupación -->
+                </div>
+
+                <div class="action-buttons" style="margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="processMultipleEntries()" id="processMultipleBtn" style="display: none;">
+                        <span>✅</span> Crear Todos los Registros
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearMultipleForm()">
+                        <span>🔄</span> Limpiar Todo
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="timeline" id="timeline">
+            <div class="no-results" id="noResults" style="display: none;">
+                No se encontraron materiales registrados
+            </div>
+        </div>
+
+        <div class="stats-bar">
+            <span id="statsTotal">Total de materiales: 0</span>
+            <span id="statsFiltered">Mostrando: 0</span>
+            <button onclick="exportData()" style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 15px; cursor: pointer;">
+                📊 Exportar Datos
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal para ver imágenes -->
+    <div id="imageModal" class="modal">
+        <span class="close">&times;</span>
+        <div class="modal-content">
+            <img class="modal-image" id="modalImage">
+        </div>
+    </div>
+
+    <script>
+        let inventoryEntries = [];
+        let selectedPhotos = [];
+        let multiplePhotos = [];
+        let currentFilter = {};
+        let editingEntryId = null;
+
+        // Función para parsear fecha correctamente (fix para el problema de zona horaria)
+        function parseLocalDate(dateString) {
+            const [year, month, day] = dateString.split('-').map(num => parseInt(num));
+            return new Date(year, month - 1, day);
+        }
+
+        // Función para formatear fecha para input date
+        function formatDateForInput(date) {
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Datos de ejemplo para demostración
+        function createSampleEntries() {
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const lastWeek = new Date(today);
+            lastWeek.setDate(lastWeek.getDate() - 7);
+
+            return [
+                {
+                    id: 1,
+                    codigo: "1234",
+                    descripcion: "Tornillos hexagonales M8x50mm acero inoxidable",
+                    almacen: "1",
+                    cantidad: 500,
+                    fecha: formatDateForInput(today),
+                    fotos: [],
+                    timestamp: today.getTime()
+                },
+                {
+                    id: 2,
+                    codigo: "5678",
+                    descripcion: "Arandelas planas DIN 125 M8",
+                    almacen: "1",
+                    cantidad: 1000,
+                    fecha: formatDateForInput(today),
+                    fotos: [],
+                    timestamp: today.getTime()
+                },
+                {
+                    id: 3,
+                    codigo: "901",
+                    descripcion: "Cables eléctricos 2.5mm² azul rollo 100m",
+                    almacen: "3",
+                    cantidad: 5,
+                    fecha: formatDateForInput(yesterday),
+                    fotos: [],
+                    timestamp: yesterday.getTime()
+                },
+                {
+                    id: 4,
+                    codigo: "2468",
+                    descripcion: "Tubos PVC 110mm x 6m presión",
+                    almacen: "2",
+                    cantidad: 20,
+                    fecha: formatDateForInput(lastWeek),
+                    fotos: [],
+                    timestamp: lastWeek.getTime()
+                }
+            ];
+        }
+
+        // Inicialización
+        window.addEventListener('load', function() {
+            loadFromStorage();
+            
+            if (inventoryEntries.length === 0) {
+                inventoryEntries = createSampleEntries();
+                saveToStorage();
+            }
+            
+            displayInventory();
+            updateStats();
+            
+            document.getElementById('fecha').value = formatDateForInput(new Date());
+            
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // Búsqueda en tiempo real
+            document.getElementById('searchGeneral').addEventListener('input', applyFilters);
+            document.getElementById('filterAlmacen').addEventListener('change', applyFilters);
+            document.getElementById('filterFecha').addEventListener('change', applyFilters);
+
+            // Filtros rápidos
+            document.querySelectorAll('.filter-btn[data-days]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    applyQuickFilter(parseInt(this.dataset.days));
+                });
+            });
+
+            document.getElementById('clearFilters').addEventListener('click', clearAllFilters);
+
+            // Cambio de modo
+            document.getElementById('singleModeBtn').addEventListener('click', () => switchMode('single'));
+            document.getElementById('multipleModeBtn').addEventListener('click', () => switchMode('multiple'));
+
+            // Drag and drop para fotos individuales
+            setupDragDrop('fotos', 'photosPreview', handleSinglePhotos);
+            
+            // Drag and drop para fotos múltiples
+            setupDragDrop('fotosMultiple', 'multipleWorkspace', handleMultiplePhotos);
+        }
+
+        function setupDragDrop(inputId, previewId, handler) {
+            const dropZone = document.querySelector(`input[id="${inputId}"]`).parentElement;
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                const files = e.dataTransfer.files;
+                document.getElementById(inputId).files = files;
+                handler(files);
+            });
+
+            document.getElementById(inputId).addEventListener('change', (e) => {
+                handler(e.target.files);
+            });
+        }
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function switchMode(mode) {
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.single-mode, .multiple-mode').forEach(form => form.classList.remove('active'));
+            
+            if (mode === 'single') {
+                document.getElementById('singleModeBtn').classList.add('active');
+                document.querySelector('.single-mode').classList.add('active');
+            } else {
+                document.getElementById('multipleModeBtn').classList.add('active');
+                document.querySelector('.multiple-mode').classList.add('active');
+            }
+        }
+
+        function handleSinglePhotos(files) {
+            const preview = document.getElementById('photosPreview');
+            let hasErrors = false;
+
+            Array.from(files).forEach((file) => {
+                if (file.size > 5 * 1024 * 1024) {
+                    showNotification(`La imagen "${file.name}" supera el límite de 5MB`, 'error');
+                    hasErrors = true;
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const photoId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                    selectedPhotos.push({
+                        id: photoId,
+                        name: file.name,
+                        data: e.target.result
+                    });
+
+                    const photoDiv = document.createElement('div');
+                    photoDiv.className = 'photo-preview';
+                    photoDiv.innerHTML = `
+                        <img src="${e.target.result}" alt="${file.name}">
+                        <button class="photo-remove" onclick="removeSinglePhoto('${photoId}')">×</button>
+                    `;
+                    preview.appendChild(photoDiv);
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // Limpiar el input para permitir seleccionar los mismos archivos de nuevo
+            document.getElementById('fotos').value = '';
+            
+            if (!hasErrors && files.length > 0) {
+                showNotification(`${files.length} foto(s) agregada(s)`, 'success');
+            }
+        }
+
+        function removeSinglePhoto(photoId) {
+            const photoIndex = selectedPhotos.findIndex(photo => photo.id === photoId);
+            if (photoIndex !== -1) {
+                selectedPhotos.splice(photoIndex, 1);
+                
+                // Recrear toda la vista de preview
+                const preview = document.getElementById('photosPreview');
+                preview.innerHTML = '';
+                
+                selectedPhotos.forEach(photo => {
+                    const photoDiv = document.createElement('div');
+                    photoDiv.className = 'photo-preview';
+                    photoDiv.innerHTML = `
+                        <img src="${photo.data}" alt="${photo.name}">
+                        <button class="photo-remove" onclick="removeSinglePhoto('${photo.id}')">×</button>
+                    `;
+                    preview.appendChild(photoDiv);
+                });
+                
+                showNotification('Foto eliminada', 'info');
+            }
+        }
+
+        function handleMultiplePhotos(files) {
+            const workspace = document.getElementById('multipleWorkspace');
+            
+            if (files.length === 0) return;
+
+            // Mostrar selector de fecha
+            document.getElementById('dateSelector').style.display = 'flex';
+            document.getElementById('commonDate').value = formatDateForInput(new Date());
+
+            // Si no existe el área de trabajo, crearla
+            if (!document.getElementById('availablePhotos')) {
+                const availableSection = document.createElement('div');
+                availableSection.className = 'available-photos-section';
+                availableSection.innerHTML = `
+                    <h3 style="margin-bottom: 15px; color: #2c3e50;">📸 Fotos Disponibles</h3>
+                    <div id="availablePhotos" class="photos-preview" style="border: 2px dashed #bdc3c7; padding: 15px; min-height: 120px;">
+                    </div>
+                    <button class="btn btn-primary" id="createGroupBtn" style="margin-top: 15px;">
+                        <span>➕</span> Crear Nuevo Grupo
+                    </button>
+                `;
+                workspace.appendChild(availableSection);
+                
+                // Agregar event listener al botón después de crearlo
+                document.getElementById('createGroupBtn').addEventListener('click', createNewGroup);
+            }
+
+            let validFiles = 0;
+            let processedFiles = 0;
+
+            // Procesar archivos
+            Array.from(files).forEach((file, index) => {
+                if (file.size > 5 * 1024 * 1024) {
+                    showNotification(`La imagen "${file.name}" supera el límite de 5MB`, 'error');
+                    return;
+                }
+
+                validFiles++;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    multiplePhotos.push({
+                        id: Date.now() + '-' + index + '-' + Math.random().toString(36).substr(2, 5),
+                        name: file.name,
+                        data: e.target.result,
+                        assigned: false
+                    });
+
+                    processedFiles++;
+                    
+                    if (processedFiles === validFiles) {
+                        displayAvailablePhotos();
+                        document.getElementById('processMultipleBtn').style.display = 'flex';
+                        showNotification(`${validFiles} foto(s) agregada(s)`, 'success');
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // Limpiar el input
+            document.getElementById('fotosMultiple').value = '';
+        }
+
+        function displayAvailablePhotos() {
+            const container = document.getElementById('availablePhotos');
+            const availablePhotos = multiplePhotos.filter(photo => !photo.assigned);
+            
+            container.innerHTML = '';
+            
+            if (availablePhotos.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #7f8c8d; margin: 40px 0;">Todas las fotos han sido asignadas</p>';
+                return;
+            }
+
+            availablePhotos.forEach(photo => {
+                const photoDiv = document.createElement('div');
+                photoDiv.className = 'photo-preview';
+                photoDiv.draggable = true;
+                photoDiv.dataset.photoId = photo.id;
+                photoDiv.style.cursor = 'grab';
+                photoDiv.innerHTML = `
+                    <img src="${photo.data}" alt="${photo.name}">
+                    <button class="photo-remove" data-photo-id="${photo.id}">×</button>
+                `;
+                
+                // Agregar event listener al botón de eliminar
+                photoDiv.querySelector('.photo-remove').addEventListener('click', () => removeAvailablePhoto(photo.id));
+                
+                photoDiv.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', photo.id);
+                    photoDiv.classList.add('dragging');
+                    
+                    // Agregar efecto visual a todas las zonas de drop
+                    document.querySelectorAll('.group-photos').forEach(zone => {
+                        zone.classList.add('drag-active');
+                    });
+                });
+                
+                photoDiv.addEventListener('dragend', (e) => {
+                    photoDiv.classList.remove('dragging');
+                    
+                    // Remover efectos visuales
+                    document.querySelectorAll('.group-photos').forEach(zone => {
+                        zone.classList.remove('drag-active');
+                    });
+                });
+                
+                container.appendChild(photoDiv);
+            });
+        }
+
+        let groupCounter = 0;
+
+        function createNewGroup() {
+            groupCounter++;
+            const workspace = document.getElementById('multipleWorkspace');
+            
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'group-container';
+            groupDiv.id = `group-${groupCounter}`;
+            groupDiv.style.cssText = `
+                background: white;
+                border: 2px solid #3498db;
+                border-radius: 10px;
+                padding: 20px;
+                margin-top: 20px;
+            `;
+            
+            groupDiv.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h4 style="color: #2c3e50; margin: 0;">📦 Grupo ${groupCounter}</h4>
+                    <button onclick="removeGroup('group-${groupCounter}')" style="background: #e74c3c; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer;">×</button>
+                </div>
+                
+                <div class="form-grid" style="grid-template-columns: 1fr 2fr 1fr 1fr; margin-bottom: 15px;">
+                    <div class="form-group">
+                        <label>Código</label>
+                        <input type="number" class="form-input group-codigo" placeholder="1234" min="100" max="9999">
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <input type="text" class="form-input group-descripcion" placeholder="Descripción del material">
+                    </div>
+                    <div class="form-group">
+                        <label>Almacén</label>
+                        <select class="form-input group-almacen">
+                            <option value="">Seleccionar</option>
+                            <option value="1">Almacén 1</option>
+                            <option value="2">Almacén 2</option>
+                            <option value="3">Almacén 3</option>
+                            <option value="4">Almacén 4</option>
+                            <option value="5">Almacén 5</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Cantidad</label>
+                        <input type="number" class="form-input group-cantidad" placeholder="100" min="1">
+                    </div>
+                </div>
+                
+                <div class="group-photos" style="border: 2px dashed #95a5a6; padding: 15px; min-height: 100px; border-radius: 8px;">
+                    <p style="text-align: center; color: #7f8c8d;">Arrastra fotos aquí desde "Fotos Disponibles"</p>
+                </div>
+            `;
+            
+            // Insertar antes del área de fotos disponibles
+            const availableSection = workspace.querySelector('.available-photos-section');
+            if (availableSection) {
+                workspace.insertBefore(groupDiv, availableSection);
+            } else {
+                workspace.appendChild(groupDiv);
+            }
+            
+            setupGroupDropZone(`group-${groupCounter}`);
+        }
+
+        function setupGroupDropZone(groupId) {
+            const dropZone = document.querySelector(`#${groupId} .group-photos`);
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.style.borderColor = '#3498db';
+                    dropZone.style.background = '#e3f2fd';
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.style.borderColor = '#95a5a6';
+                    dropZone.style.background = 'transparent';
+                }, false);
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                const photoId = e.dataTransfer.getData('text/plain');
+                const photo = multiplePhotos.find(p => p.id === photoId);
+                
+                if (photo && !photo.assigned) {
+                    photo.assigned = true;
+                    photo.groupId = groupId;
+                    
+                    const photoDiv = document.createElement('div');
+                    photoDiv.className = 'photo-preview';
+                    photoDiv.style.display = 'inline-block';
+                    photoDiv.style.margin = '5px';
+                    photoDiv.innerHTML = `
+                        <img src="${photo.data}" alt="${photo.name}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;">
+                        <button data-photo-id="${photoId}" style="position: absolute; top: 5px; right: 5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px;">×</button>
+                    `;
+                    
+                    // Agregar event listener al botón de devolver
+                    photoDiv.querySelector('button').addEventListener('click', () => returnPhotoToAvailable(photoId));
+                    
+                    if (dropZone.querySelector('p')) {
+                        dropZone.innerHTML = '';
+                    }
+                    dropZone.appendChild(photoDiv);
+                    
+                    displayAvailablePhotos();
+                }
+            });
+        }
+
+        function removeAvailablePhoto(photoId) {
+            if (confirm('¿Eliminar esta foto de las disponibles?')) {
+                const photoIndex = multiplePhotos.findIndex(p => p.id === photoId);
+                if (photoIndex !== -1) {
+                    multiplePhotos.splice(photoIndex, 1);
+                    displayAvailablePhotos();
+                    showNotification('Foto eliminada', 'info');
+                }
+            }
+        }
+
+        function returnPhotoToAvailable(photoId) {
+            const photo = multiplePhotos.find(p => p.id === photoId);
+            if (photo) {
+                photo.assigned = false;
+                photo.groupId = null;
+                
+                // Remover de la vista del grupo
+                const groups = document.querySelectorAll('.group-photos');
+                groups.forEach(group => {
+                    const photoElements = group.querySelectorAll('.photo-preview');
+                    photoElements.forEach(el => {
+                        if (el.querySelector(`button[data-photo-id="${photoId}"]`)) {
+                            el.remove();
+                            // Si no quedan fotos, mostrar el mensaje de nuevo
+                            if (group.querySelectorAll('.photo-preview').length === 0) {
+                                group.innerHTML = '<p style="text-align: center; color: #7f8c8d;">Arrastra fotos aquí desde "Fotos Disponibles"</p>';
+                            }
+                        }
+                    });
+                });
+                
+                displayAvailablePhotos();
+            }
+        }
+
+        function removeGroup(groupId) {
+            if (confirm('¿Eliminar este grupo? Las fotos volverán a estar disponibles.')) {
+                // Devolver fotos a disponibles
+                multiplePhotos.forEach(photo => {
+                    if (photo.groupId === groupId) {
+                        photo.assigned = false;
+                        photo.groupId = null;
+                    }
+                });
+                
+                document.getElementById(groupId).remove();
+                displayAvailablePhotos();
+            }
+        }
+
+        function addSingleEntry() {
+            const codigo = document.getElementById('codigo').value.trim();
+            const descripcion = document.getElementById('descripcion').value.trim();
+            const almacen = document.getElementById('almacen').value;
+            const cantidad = document.getElementById('cantidad').value;
+            const fecha = document.getElementById('fecha').value;
+
+            // Validaciones
+            if (!codigo || codigo.length < 3 || codigo.length > 4) {
+                alert('El código debe tener 3 o 4 dígitos');
+                return;
+            }
+
+            if (!descripcion) {
+                alert('La descripción es obligatoria');
+                return;
+            }
+
+            if (!almacen) {
+                alert('Selecciona un almacén');
+                return;
+            }
+
+            if (!cantidad || cantidad < 1) {
+                alert('La cantidad debe ser mayor a 0');
+                return;
+            }
+
+            if (!fecha) {
+                alert('La fecha es obligatoria');
+                return;
+            }
+
+            try {
+                if (editingEntryId) {
+                    // Modo edición
+                    updateEntry(editingEntryId);
+                } else {
+                    // Modo creación
+                    const entry = {
+                        id: Date.now(),
+                        codigo: codigo,
+                        descripcion: descripcion,
+                        almacen: almacen,
+                        cantidad: parseInt(cantidad),
+                        fecha: fecha,
+                        fotos: selectedPhotos.map(photo => ({
+                            name: photo.name,
+                            data: photo.data
+                        })),
+                        timestamp: Date.now()
+                    };
+
+                    inventoryEntries.push(entry);
+                    inventoryEntries.sort((a, b) => parseLocalDate(b.fecha) - parseLocalDate(a.fecha));
+                    
+                    saveToStorage();
+                    displayInventory();
+                    updateStats();
+                    clearSingleForm();
+                    
+                    showNotification('Material registrado exitosamente', 'success');
+                }
+            } catch (error) {
+                console.error('Error al crear entrada:', error);
+                alert('Error al registrar el material. Por favor, intenta de nuevo.');
+            }
+        }
+
+        function processMultipleEntries() {
+            const groups = document.querySelectorAll('.group-container');
+            const entries = [];
+            const commonDate = document.getElementById('commonDate').value;
+            
+            if (!commonDate) {
+                alert('Por favor selecciona una fecha para todos los grupos');
+                document.getElementById('commonDate').focus();
+                return;
+            }
+
+            let hasErrors = false;
+
+            groups.forEach(group => {
+                const codigo = group.querySelector('.group-codigo').value.trim();
+                const descripcion = group.querySelector('.group-descripcion').value.trim();
+                const almacen = group.querySelector('.group-almacen').value;
+                const cantidad = group.querySelector('.group-cantidad').value;
+                
+                if (!codigo || !descripcion || !almacen || !cantidad) {
+                    hasErrors = true;
+                    group.style.borderColor = '#e74c3c';
+                    return;
+                }
+                
+                group.style.borderColor = '#3498db';
+                
+                const groupPhotos = multiplePhotos.filter(p => p.groupId === group.id);
+                
+                const entry = {
+                    id: Date.now() + Math.random(),
+                    codigo: codigo,
+                    descripcion: descripcion,
+                    almacen: almacen,
+                    cantidad: parseInt(cantidad),
+                    fecha: commonDate,
+                    fotos: groupPhotos.map(p => ({name: p.name, data: p.data})),
+                    timestamp: Date.now()
+                };
+                
+                entries.push(entry);
+            });
+
+            if (hasErrors) {
+                alert('Por favor completa todos los campos en todos los grupos (los grupos con errores están marcados en rojo)');
+                return;
+            }
+
+            if (entries.length > 0) {
+                inventoryEntries.push(...entries);
+                inventoryEntries.sort((a, b) => parseLocalDate(b.fecha) - parseLocalDate(a.fecha));
+                
+                saveToStorage();
+                displayInventory();
+                updateStats();
+                clearMultipleForm();
+                
+                showNotification(`${entries.length} materiales registrados exitosamente`, 'success');
+            } else {
+                alert('Crea al menos un grupo antes de procesar');
+            }
+        }
+
+        function clearSingleForm() {
+            document.getElementById('codigo').value = '';
+            document.getElementById('descripcion').value = '';
+            document.getElementById('almacen').value = '';
+            document.getElementById('cantidad').value = '';
+            document.getElementById('fecha').value = formatDateForInput(new Date());
+            document.getElementById('fotos').value = '';
+            document.getElementById('photosPreview').innerHTML = '';
+            selectedPhotos = [];
+            editingEntryId = null;
+            
+            // Resetear el botón si está en modo edición
+            const addButton = document.querySelector('.single-mode .btn-primary');
+            if (addButton) {
+                addButton.innerHTML = '<span>✅</span> Registrar Material';
+            }
+        }
+
+        function clearMultipleForm() {
+            if (multiplePhotos.length > 0 || document.querySelectorAll('.group-container').length > 0) {
+                if (!confirm('¿Limpiar todo el trabajo en progreso?')) {
+                    return;
+                }
+            }
+            
+            document.getElementById('fotosMultiple').value = '';
+            document.getElementById('multipleWorkspace').innerHTML = '';
+            document.getElementById('processMultipleBtn').style.display = 'none';
+            document.getElementById('dateSelector').style.display = 'none';
+            document.getElementById('commonDate').value = '';
+            multiplePhotos = [];
+            groupCounter = 0;
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchGeneral').value.toLowerCase().trim();
+            const almacenFilter = document.getElementById('filterAlmacen').value;
+            const fechaFilter = document.getElementById('filterFecha').value;
+
+            currentFilter = { searchTerm, almacenFilter, fechaFilter };
+            
+            let filtered = inventoryEntries.filter(entry => {
+                const matchesSearch = !searchTerm || 
+                    entry.codigo.toLowerCase().includes(searchTerm) ||
+                    entry.descripcion.toLowerCase().includes(searchTerm);
+                
+                const matchesAlmacen = !almacenFilter || entry.almacen === almacenFilter;
+                const matchesFecha = !fechaFilter || entry.fecha === fechaFilter;
+
+                return matchesSearch && matchesAlmacen && matchesFecha;
+            });
+
+            displayInventory(filtered);
+            updateStats(filtered.length);
+        }
+
+        function applyQuickFilter(days) {
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - days);
+
+            const filtered = inventoryEntries.filter(entry => {
+                return parseLocalDate(entry.fecha) >= cutoffDate;
+            });
+
+            displayInventory(filtered);
+            updateStats(filtered.length);
+        }
+
+        function clearAllFilters() {
+            document.getElementById('searchGeneral').value = '';
+            document.getElementById('filterAlmacen').value = '';
+            document.getElementById('filterFecha').value = '';
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            
+            currentFilter = {};
+            displayInventory();
+            updateStats();
+        }
+
+        function displayInventory(filteredEntries = null) {
+            const timeline = document.getElementById('timeline');
+            const noResults = document.getElementById('noResults');
+            const entries = filteredEntries || inventoryEntries;
+
+            timeline.innerHTML = '';
+            timeline.appendChild(noResults);
+
+            if (entries.length === 0) {
+                noResults.style.display = 'block';
+                noResults.textContent = filteredEntries === null ? 
+                    'No hay materiales registrados. ¡Registra el primero!' : 
+                    'No se encontraron materiales con los filtros aplicados';
+                return;
+            }
+
+            noResults.style.display = 'none';
+
+            // Agrupar por fecha
+            const groupedByDate = {};
+            entries.forEach(entry => {
+                if (!groupedByDate[entry.fecha]) {
+                    groupedByDate[entry.fecha] = [];
+                }
+                groupedByDate[entry.fecha].push(entry);
+            });
+
+            // Ordenar fechas descendente (más reciente primero)
+            const sortedDates = Object.keys(groupedByDate).sort((a, b) => parseLocalDate(b) - parseLocalDate(a));
+
+            sortedDates.forEach(fecha => {
+                const dateGroup = document.createElement('div');
+                dateGroup.className = 'date-group';
+
+                const formattedDate = parseLocalDate(fecha).toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                dateGroup.innerHTML = `
+                    <div class="date-header">
+                        📅 ${formattedDate} (${groupedByDate[fecha].length} material${groupedByDate[fecha].length !== 1 ? 'es' : ''})
+                    </div>
+                    <div class="entries-grid" id="entries-${fecha}"></div>
+                `;
+
+                timeline.appendChild(dateGroup);
+
+                const entriesGrid = document.getElementById(`entries-${fecha}`);
+                groupedByDate[fecha].forEach(entry => {
+                    const entryCard = createEntryCard(entry);
+                    entriesGrid.appendChild(entryCard);
+                });
+            });
+        }
+
+        function createEntryCard(entry) {
+            const card = document.createElement('div');
+            card.className = 'entry-card';
+            card.dataset.entryId = entry.id;
+
+            const photosHtml = entry.fotos && entry.fotos.length > 0 ? 
+                `<div class="entry-photos">
+                    ${entry.fotos.map(photo => 
+                        `<img src="${photo.data}" alt="${photo.name}" class="entry-photo" onclick="openModal('${photo.data}', '${encodeURIComponent(photo.name)}')" loading="lazy">`
+                    ).join('')}
+                </div>` : '<div style="text-align: center; color: #bdc3c7; padding: 20px;">📷 Sin fotos</div>';
+
+            card.innerHTML = `
+                <div class="entry-header">
+                    <div style="display: flex; gap: 10px;">
+                        <div class="entry-code">#${entry.codigo}</div>
+                        <div class="entry-warehouse">Almacén ${entry.almacen}</div>
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                        <button data-entry-id="${entry.id}" onclick="editEntry(${entry.id})" style="background: #f39c12; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 14px;" title="Editar">✏️</button>
+                        <button data-entry-id="${entry.id}" onclick="deleteEntry(${entry.id})" style="background: #e74c3c; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 14px;" title="Eliminar">🗑️</button>
+                    </div>
+                </div>
+                <div class="entry-description">${entry.descripcion}</div>
+                <div class="entry-quantity">📦 ${entry.cantidad} unidades</div>
+                ${photosHtml}
+            `;
+
+            return card;
+        }
+
+        function editEntry(entryId) {
+            const entry = inventoryEntries.find(e => e.id == entryId);
+            if (!entry) return;
+
+            editingEntryId = entryId;
+
+            // Cambiar a modo individual
+            switchMode('single');
+
+            // Llenar formulario con datos existentes
+            document.getElementById('codigo').value = entry.codigo;
+            document.getElementById('descripcion').value = entry.descripcion;
+            document.getElementById('almacen').value = entry.almacen;
+            document.getElementById('cantidad').value = entry.cantidad;
+            document.getElementById('fecha').value = entry.fecha;
+
+            // Cargar fotos existentes
+            selectedPhotos = entry.fotos.map((photo, index) => ({
+                id: 'existing-' + entryId + '-' + index,
+                name: photo.name,
+                data: photo.data
+            }));
+            
+            const preview = document.getElementById('photosPreview');
+            preview.innerHTML = '';
+            
+            selectedPhotos.forEach(photo => {
+                const photoDiv = document.createElement('div');
+                photoDiv.className = 'photo-preview';
+                photoDiv.innerHTML = `
+                    <img src="${photo.data}" alt="${photo.name}">
+                    <button class="photo-remove" onclick="removeSinglePhoto('${photo.id}')">×</button>
+                `;
+                preview.appendChild(photoDiv);
+            });
+
+            // Cambiar botón para modo edición
+            const addButton = document.querySelector('.single-mode .btn-primary');
+            addButton.innerHTML = '<span>💾</span> Actualizar Material';
+
+            // Scroll hacia el formulario
+            document.querySelector('.controls').scrollIntoView({ behavior: 'smooth' });
+            
+            showNotification('Editando material. Modifica los campos y presiona "Actualizar"', 'info');
+        }
+
+        function updateEntry(entryId) {
+            const codigo = document.getElementById('codigo').value.trim();
+            const descripcion = document.getElementById('descripcion').value.trim();
+            const almacen = document.getElementById('almacen').value;
+            const cantidad = document.getElementById('cantidad').value;
+            const fecha = document.getElementById('fecha').value;
+
+            // Validaciones básicas
+            if (!codigo || !descripcion || !almacen || !cantidad || !fecha) {
+                alert('Todos los campos son obligatorios');
+                return;
+            }
+
+            try {
+                const entryIndex = inventoryEntries.findIndex(e => e.id == entryId);
+                if (entryIndex !== -1) {
+                    inventoryEntries[entryIndex] = {
+                        ...inventoryEntries[entryIndex],
+                        codigo: codigo,
+                        descripcion: descripcion,
+                        almacen: almacen,
+                        cantidad: parseInt(cantidad),
+                        fecha: fecha,
+                        fotos: selectedPhotos.map(photo => ({
+                            name: photo.name,
+                            data: photo.data
+                        }))
+                    };
+
+                    inventoryEntries.sort((a, b) => parseLocalDate(b.fecha) - parseLocalDate(a.fecha));
+                    
+                    saveToStorage();
+                    displayInventory();
+                    updateStats();
+                    clearSingleForm();
+                    
+                    showNotification('Material actualizado exitosamente', 'success');
+                }
+            } catch (error) {
+                console.error('Error al actualizar:', error);
+                alert('Error al actualizar el material');
+            }
+        }
+
+        function deleteEntry(entryId) {
+            const entry = inventoryEntries.find(e => e.id == entryId);
+            if (!entry) {
+                console.error('No se encontró la entrada con ID:', entryId);
+                return;
+            }
+
+            if (confirm(`¿Eliminar "${entry.descripcion}" (Código: ${entry.codigo})?`)) {
+                const entryIndex = inventoryEntries.findIndex(e => e.id == entryId);
+                if (entryIndex !== -1) {
+                    inventoryEntries.splice(entryIndex, 1);
+                    saveToStorage();
+                    displayInventory();
+                    updateStats();
+                    showNotification('Material eliminado correctamente', 'info');
+                }
+            }
+        }
+
+        function updateStats(filteredCount = null) {
+            const totalCount = inventoryEntries.length;
+            const displayCount = filteredCount !== null ? filteredCount : totalCount;
+            
+            document.getElementById('statsTotal').textContent = `Total de materiales: ${totalCount}`;
+            document.getElementById('statsFiltered').textContent = `Mostrando: ${displayCount}`;
+        }
+
+        function openModal(imageSrc, imageName = '') {
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            
+            modal.style.display = 'block';
+            modalImage.src = imageSrc;
+            modalImage.alt = decodeURIComponent(imageName);
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('imageModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        document.querySelector('.close').onclick = closeModal;
+        document.getElementById('imageModal').onclick = function(e) {
+            if (e.target === this) closeModal();
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        function saveToStorage() {
+            try {
+                localStorage.setItem('inventoryEntries', JSON.stringify(inventoryEntries));
+            } catch (error) {
+                console.error('Error al guardar:', error);
+                if (error.name === 'QuotaExceededError') {
+                    alert('Error: No hay suficiente espacio de almacenamiento. Considera exportar y limpiar datos antiguos.');
+                }
+            }
+        }
+
+        function loadFromStorage() {
+            try {
+                const saved = localStorage.getItem('inventoryEntries');
+                if (saved) {
+                    inventoryEntries = JSON.parse(saved);
+                }
+            } catch (error) {
+                console.error('Error al cargar datos:', error);
+                inventoryEntries = [];
+            }
+        }
+
+        function exportData() {
+            const data = inventoryEntries.map(entry => ({
+                Codigo: entry.codigo,
+                Descripcion: entry.descripcion,
+                Almacen: entry.almacen,
+                Cantidad: entry.cantidad,
+                Fecha: entry.fecha,
+                CantidadFotos: entry.fotos.length
+            }));
+
+            const csv = convertToCSV(data);
+            downloadCSV(csv, `inventario_materiales_${formatDateForInput(new Date())}.csv`);
+        }
+
+        function convertToCSV(data) {
+            if (data.length === 0) return '';
+            
+            const header = Object.keys(data[0]).join(',');
+            const rows = data.map(row => 
+                Object.values(row).map(value => 
+                    typeof value === 'string' && value.includes(',') ? `"${value}"` : value
+                ).join(',')
+            );
+            return '\uFEFF' + header + '\n' + rows.join('\n'); // UTF-8 BOM
+        }
+
+        function downloadCSV(csv, filename) {
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function showNotification(message, type = 'info') {
+            // Remover notificación existente si la hay
+            const existing = document.querySelector('.notification');
+            if (existing) {
+                existing.remove();
+            }
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: bold;
+                z-index: 1001;
+                max-width: 300px;
+                word-wrap: break-word;
+                animation: slideInRight 0.3s ease;
+            `;
+            
+            if (type === 'success') {
+                notification.style.background = '#27ae60';
+            } else if (type === 'error') {
+                notification.style.background = '#e74c3c';
+            } else {
+                notification.style.background = '#3498db';
+            }
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 3000);
+        }
+
+        // Hacer funciones globales para onclick
+        window.removeSinglePhoto = removeSinglePhoto;
+        window.removeGroup = removeGroup;
+        window.editEntry = editEntry;
+        window.deleteEntry = deleteEntry;
+        window.openModal = openModal;
+        window.addSingleEntry = addSingleEntry;
+        window.clearSingleForm = clearSingleForm;
+        window.processMultipleEntries = processMultipleEntries;
+        window.clearMultipleForm = clearMultipleForm;
+        window.exportData = exportData;
+    </script>
+</body>
+</html>
